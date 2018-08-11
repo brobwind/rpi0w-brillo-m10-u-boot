@@ -1,14 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  *
  * Configuration settings for the SolidRun mx6 based boards
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef __MX6CUBOXI_CONFIG_H
 #define __MX6CUBOXI_CONFIG_H
 
-#include <config_distro_defaults.h>
 #include "mx6_common.h"
 
 #include "imx6_spl.h"
@@ -23,12 +21,10 @@
 
 /* SATA Configuration */
 #ifdef CONFIG_CMD_SATA
-#define CONFIG_DWC_AHSATA
 #define CONFIG_SYS_SATA_MAX_DEVICE      1
 #define CONFIG_DWC_AHSATA_PORT_ID       0
 #define CONFIG_DWC_AHSATA_BASE_ADDR     SATA_ARB_BASE_ADDR
 #define CONFIG_LBA48
-#define CONFIG_LIBATA
 #endif
 
 /* Ethernet Configuration */
@@ -74,7 +70,6 @@
 #define CONFIG_SYS_FSL_USDHC_NUM	1
 #define CONFIG_SYS_MMC_ENV_DEV		0	/* SDHC2 */
 
-#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"fdtfile=undefined\0" \
@@ -106,26 +101,21 @@
 			"fi; "	\
 		"fi\0" \
 	"findfdt="\
-		"if test $board_name = HUMMINGBOARD2 && test $board_rev = MX6Q ; then " \
-			"setenv fdtfile imx6q-hummingboard2.dtb; fi; " \
-		"if test $board_name = HUMMINGBOARD2 && test $board_rev = MX6DL ; then " \
-			"setenv fdtfile imx6dl-hummingboard2.dtb; fi; " \
-		"if test $board_name = HUMMINGBOARD && test $board_rev = MX6Q ; then " \
-			"setenv fdtfile imx6q-hummingboard.dtb; fi; " \
-		"if test $board_name = HUMMINGBOARD && test $board_rev = MX6DL ; then " \
-			"setenv fdtfile imx6dl-hummingboard.dtb; fi; " \
-		"if test $board_name = CUBOXI && test $board_rev = MX6Q ; then " \
-			"setenv fdtfile imx6q-cubox-i.dtb; fi; " \
-		"if test $board_name = CUBOXI && test $board_rev = MX6DL ; then " \
-			"setenv fdtfile imx6dl-cubox-i.dtb; fi; " \
+		"if test $board_rev = MX6Q ; then " \
+			"setenv fdtprefix imx6q; fi; " \
+		"if test $board_rev = MX6DL ; then " \
+			"setenv fdtprefix imx6dl; fi; " \
+		"if test $som_rev = V15 ; then " \
+			"setenv fdtsuffix -som-v15; fi; " \
+		"if test $board_name = HUMMINGBOARD2 ; then " \
+			"setenv fdtfile ${fdtprefix}-hummingboard2${fdtsuffix}.dtb; fi; " \
+		"if test $board_name = HUMMINGBOARD ; then " \
+			"setenv fdtfile ${fdtprefix}-hummingboard${fdtsuffix}.dtb; fi; " \
+		"if test $board_name = CUBOXI ; then " \
+			"setenv fdtfile ${fdtprefix}-cubox-i${fdtsuffix}.dtb; fi; " \
 		"if test $fdtfile = undefined; then " \
 			"echo WARNING: Could not determine dtb to use; fi; \0" \
 	BOOTENV
-
-#define CONFIG_BOOTCOMMAND \
-	"run findfdt; " \
-	"run finduuid; " \
-	"run distro_bootcmd"
 
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \

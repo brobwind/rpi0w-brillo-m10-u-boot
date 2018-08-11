@@ -1,19 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2016 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1046ARDB_H__
 #define __LS1046ARDB_H__
 
 #include "ls1046a_common.h"
-
-#ifdef CONFIG_SD_BOOT
-#define CONFIG_SYS_TEXT_BASE		0x82000000
-#else
-#define CONFIG_SYS_TEXT_BASE		0x40100000
-#endif
 
 #define CONFIG_SYS_CLK_FREQ		100000000
 #define CONFIG_DDR_CLK_FREQ		100000000
@@ -195,6 +188,8 @@
 
 #define FM1_10GEC1_PHY_ADDR		0x0
 
+#define FDT_SEQ_MACADDR_FROM_ENV
+
 #define CONFIG_ETHPRIME			"FM1@DTSEC3"
 #endif
 
@@ -209,24 +204,15 @@
 #endif
 #endif
 
-/* SATA */
-#ifndef SPL_NO_SATA
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
-#define CONFIG_SCSI_AHCI_PLAT
-
-#define CONFIG_SYS_SATA				AHCI_BASE_ADDR
-
-#define CONFIG_SYS_SCSI_MAX_SCSI_ID		1
-#define CONFIG_SYS_SCSI_MAX_LUN			1
-#define CONFIG_SYS_SCSI_MAX_DEVICE		(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
-						CONFIG_SYS_SCSI_MAX_LUN)
-#endif
-
 #ifndef SPL_NO_MISC
 #undef CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND "run distro_bootcmd; env exists secureboot"	\
-			   "&& esbc_halt; run qspi_bootcmd;"
+#if defined(CONFIG_QSPI_BOOT)
+#define CONFIG_BOOTCOMMAND "run distro_bootcmd; run qspi_bootcmd; "	\
+			   "env exists secureboot && esbc_halt;;"
+#elif defined(CONFIG_SD_BOOT)
+#define CONFIG_BOOTCOMMAND "run distro_bootcmd;run sd_bootcmd; "	\
+			   "env exists secureboot && esbc_halt;"
+#endif
 #endif
 
 #include <asm/fsl_secure_boot.h>

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 Sebastian Andrzej Siewior <bigeasy@linutronix.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -195,6 +194,25 @@ long android_image_load(struct blk_desc *dev_desc,
 	if (blk_read != blk_cnt)
 		return -1;
 	return blk_read;
+}
+
+int android_image_get_second(const struct andr_img_hdr *hdr,
+			      ulong *second_data, ulong *second_len)
+{
+	if (!hdr->second_size) {
+		*second_data = *second_len = 0;
+		return -1;
+	}
+
+	*second_data = (unsigned long)hdr;
+	*second_data += hdr->page_size;
+	*second_data += ALIGN(hdr->kernel_size, hdr->page_size);
+	*second_data += ALIGN(hdr->ramdisk_size, hdr->page_size);
+
+	printf("second address is 0x%lx\n",*second_data);
+
+	*second_len = hdr->second_size;
+	return 0;
 }
 
 #if !defined(CONFIG_SPL_BUILD)

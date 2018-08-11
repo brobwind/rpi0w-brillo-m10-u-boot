@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1043A_COMMON_H
@@ -37,8 +36,6 @@
 /* Link Definitions */
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_FSL_OCRAM_BASE + 0xfff0)
 
-#define CONFIG_SUPPORT_RAW_INITRD
-
 #define CONFIG_SKIP_LOWLEVEL_INIT
 
 #define CONFIG_VERY_BIG_RAM
@@ -56,7 +53,6 @@
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 1024 * 1024)
 
 /* Serial Port */
-#define CONFIG_CONS_INDEX		1
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	1
 #define CONFIG_SYS_NS16550_CLK          (get_serial_clock())
@@ -65,7 +61,6 @@
 
 /* SD boot SPL */
 #ifdef CONFIG_SD_BOOT
-#define CONFIG_SPL_FRAMEWORK
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.bin"
 
 #define CONFIG_SPL_TEXT_BASE		0x10000000
@@ -96,7 +91,6 @@
 /* NAND SPL */
 #ifdef CONFIG_NAND_BOOT
 #define CONFIG_SPL_PBL_PAD
-#define CONFIG_SPL_FRAMEWORK
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.bin"
 #define CONFIG_SPL_TEXT_BASE		0x10000000
 #define CONFIG_SPL_MAX_SIZE		0x1a000
@@ -152,11 +146,6 @@
 
 /* I2C */
 #define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1
-#define CONFIG_SYS_I2C_MXC_I2C2
-#define CONFIG_SYS_I2C_MXC_I2C3
-#define CONFIG_SYS_I2C_MXC_I2C4
 
 /* PCIe */
 #ifndef SPL_NO_PCIE
@@ -174,7 +163,6 @@
 /*  MMC  */
 #ifndef SPL_NO_MMC
 #ifdef CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #endif
 #endif
@@ -238,7 +226,6 @@
 #define HWCONFIG_BUFFER_SIZE		128
 
 #ifndef SPL_NO_MISC
-#include <config_distro_defaults.h>
 #ifndef CONFIG_SPL_BUILD
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \
@@ -252,7 +239,7 @@
 	"fdt_high=0xffffffffffffffff\0"		\
 	"initrd_high=0xffffffffffffffff\0"	\
 	"fdt_addr=0x64f00000\0"		 	\
-	"kernel_addr=0x65000000\0"		\
+	"kernel_addr=0x61000000\0"		\
 	"scriptaddr=0x80000000\0"		\
 	"scripthdraddr=0x80080000\0"		\
 	"fdtheader_addr_r=0x80100000\0"		\
@@ -260,7 +247,13 @@
 	"kernel_addr_r=0x81000000\0"		\
 	"fdt_addr_r=0x90000000\0"		\
 	"load_addr=0xa0000000\0"		\
+	"kernelheader_addr=0x60800000\0"	\
 	"kernel_size=0x2800000\0"		\
+	"kernelheader_size=0x40000\0"		\
+	"kernel_addr_sd=0x8000\0"		\
+	"kernel_size_sd=0x14000\0"		\
+	"kernelhdr_addr_sd=0x4000\0"		\
+	"kernelhdr_size_sd=0x10\0"		\
 	"console=ttyS0,115200\0"		\
 	"boot_os=y\0"				\
 	"mtdparts=" CONFIG_MTDPARTS_DEFAULT "\0"	\
@@ -291,37 +284,43 @@
 			"${scripthdraddr} ${prefix}${boot_script_hdr} "	\
 			"&& esbc_validate ${scripthdraddr};"	\
 		"source ${scriptaddr}\0"			\
-	"installer=load mmc 0:2 $load_addr "	\
-		"/flex_installer_arm64.itb; "	\
-		"bootm $load_addr#ls1043ardb\0"	\
 	"qspi_bootcmd=echo Trying load from qspi..;"	\
 		"sf probe && sf read $load_addr "	\
-		"$kernel_addr $kernel_size && bootm $load_addr#$board\0" \
+		"$kernel_addr $kernel_size; env exists secureboot "	\
+		"&& sf read $kernelheader_addr_r $kernelheader_addr "	\
+		"$kernelheader_size && esbc_validate ${kernelheader_addr_r}; " \
+		"bootm $load_addr#$board\0"	\
 	"nor_bootcmd=echo Trying load from nor..;"	\
 		"cp.b $kernel_addr $load_addr "	\
-		"$kernel_size && bootm $load_addr#$board\0"
+		"$kernel_size; env exists secureboot "	\
+		"&& cp.b $kernelheader_addr $kernelheader_addr_r "	\
+		"$kernelheader_size && esbc_validate ${kernelheader_addr_r}; " \
+		"bootm $load_addr#$board\0"	    \
+	"sd_bootcmd=echo Trying load from SD ..;"       \
+		"mmcinfo; mmc read $load_addr "         \
+		"$kernel_addr_sd $kernel_size_sd && "     \
+		"env exists secureboot && mmc read $kernelheader_addr_r "		\
+		"$kernelhdr_addr_sd $kernelhdr_size_sd "		\
+		" && esbc_validate ${kernelheader_addr_r};"	\
+		"bootm $load_addr#$board\0"
+
 
 #undef CONFIG_BOOTCOMMAND
 #if defined(CONFIG_QSPI_BOOT) || defined(CONFIG_SD_BOOT_QSPI)
-#define CONFIG_BOOTCOMMAND "run distro_bootcmd; env exists secureboot"	\
-			   "&& esbc_halt; run qspi_bootcmd;"
+#define CONFIG_BOOTCOMMAND "run distro_bootcmd; run qspi_bootcmd; "	\
+			   "env exists secureboot && esbc_halt;"
+#elif defined(CONFIG_SD_BOOT)
+#define CONFIG_BOOTCOMMAND "run distro_bootcmd; run sd_bootcmd; "  \
+			   "env exists secureboot && esbc_halt;"
 #else
-#define CONFIG_BOOTCOMMAND "run distro_bootcmd; env exists secureboot"	\
-			   "&& esbc_halt; run nor_bootcmd;"
+#define CONFIG_BOOTCOMMAND "run distro_bootcmd; run nor_bootcmd; "	\
+			   "env exists secureboot && esbc_halt;"
 #endif
 #endif
 
 /* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE		512	/* Console I/O Buffer Size */
-#define CONFIG_SYS_LONGHELP
 
-#ifndef SPL_NO_MISC
-#ifndef CONFIG_CMDLINE_EDITING
-#define CONFIG_CMDLINE_EDITING		1
-#endif
-#endif
-
-#define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_MAXARGS		64	/* max command args */
 
 #define CONFIG_SYS_BOOTM_LEN   (64 << 20)      /* Increase max gunzip size */

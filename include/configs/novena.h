@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Configuration settings for the Novena U-Boot.
  *
  * Copyright (C) 2014 Marek Vasut <marex@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -13,7 +12,6 @@
 #define CONFIG_MISC_INIT_R
 #define CONFIG_KEYBOARD
 
-#include <config_distro_defaults.h>
 #include "mx6_common.h"
 
 /* U-Boot Commands */
@@ -38,8 +36,7 @@
 
 /* Booting Linux */
 #define CONFIG_BOOTFILE			"fitImage"
-#define CONFIG_BOOTCOMMAND		"run distro_bootcmd ; run net_nfs"
-#define CONFIG_HOSTNAME			novena
+#define CONFIG_HOSTNAME			"novena"
 
 /* Physical Memory Map */
 #define CONFIG_NR_DRAM_BANKS		1
@@ -109,12 +106,10 @@
 
 /* SATA Configs */
 #ifdef CONFIG_CMD_SATA
-#define CONFIG_DWC_AHSATA
 #define CONFIG_SYS_SATA_MAX_DEVICE	1
 #define CONFIG_DWC_AHSATA_PORT_ID	0
 #define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
 #define CONFIG_LBA48
-#define CONFIG_LIBATA
 #endif
 
 /* UART */

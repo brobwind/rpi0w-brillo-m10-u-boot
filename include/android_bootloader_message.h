@@ -76,15 +76,6 @@ struct android_bootloader_message {
 };
 
 /**
- * We must be cautious when changing the bootloader_message struct size,
- * because A/B-specific fields may end up with different offsets.
- */
-#if (__STDC_VERSION__ >= 201112L) || defined(__cplusplus)
-static_assert(sizeof(struct android_bootloader_message) == 2048,
-              "struct bootloader_message size changes, which may break A/B devices");
-#endif
-
-/**
  * The A/B-specific bootloader message structure (4-KiB).
  *
  * We separate A/B boot control metadata from the regular bootloader
@@ -107,15 +98,6 @@ struct android_bootloader_message_ab {
     /* Round up the entire struct to 4096-byte. */
     char reserved[2016];
 };
-
-/**
- * Be cautious about the struct size change, in case we put anything post
- * bootloader_message_ab struct (b/29159185).
- */
-#if (__STDC_VERSION__ >= 201112L) || defined(__cplusplus)
-static_assert(sizeof(struct android_bootloader_message_ab) == 4096,
-              "struct bootloader_message_ab size changes");
-#endif
 
 #define ANDROID_BOOT_CTRL_MAGIC   0x42414342 /* Bootloader Control AB */
 #define ANDROID_BOOT_CTRL_VERSION 1
@@ -164,11 +146,5 @@ struct android_bootloader_control {
      * format). */
     uint32_t crc32_le;
 } __attribute__((packed));
-
-#if (__STDC_VERSION__ >= 201112L) || defined(__cplusplus)
-static_assert(sizeof(struct android_bootloader_control) ==
-              sizeof(((struct android_bootloader_message_ab *)0)->slot_suffix),
-              "struct bootloader_control has wrong size");
-#endif
 
 #endif  /* __ANDROID_BOOTLOADER_MESSAGE_H */

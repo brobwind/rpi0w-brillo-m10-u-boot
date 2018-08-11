@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2017 NXP
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -29,6 +28,8 @@
 #include <fsl_ddr.h>
 #endif
 #include <asm/arch/clock.h>
+#include <hwconfig.h>
+#include <fsl_qbman.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -494,6 +495,41 @@ static inline int check_psci(void)
 	return 0;
 }
 
+static void config_core_prefetch(void)
+{
+	char *buf = NULL;
+	char buffer[HWCONFIG_BUFFER_SIZE];
+	const char *prefetch_arg = NULL;
+	size_t arglen;
+	unsigned int mask;
+	struct pt_regs regs;
+
+	if (env_get_f("hwconfig", buffer, sizeof(buffer)) > 0)
+		buf = buffer;
+
+	prefetch_arg = hwconfig_subarg_f("core_prefetch", "disable",
+					 &arglen, buf);
+
+	if (prefetch_arg) {
+		mask = simple_strtoul(prefetch_arg, NULL, 0) & 0xff;
+		if (mask & 0x1) {
+			printf("Core0 prefetch can't be disabled\n");
+			return;
+		}
+
+#define SIP_PREFETCH_DISABLE_64 0xC200FF13
+		regs.regs[0] = SIP_PREFETCH_DISABLE_64;
+		regs.regs[1] = mask;
+		smc_call(&regs);
+
+		if (regs.regs[0])
+			printf("Prefetch disable config failed for mask ");
+		else
+			printf("Prefetch disable config passed for mask ");
+		printf("0x%x\n", mask);
+	}
+}
+
 int arch_early_init_r(void)
 {
 #ifdef CONFIG_SYS_FSL_ERRATUM_A009635
@@ -502,8 +538,8 @@ int arch_early_init_r(void)
 	 * erratum A009635 is valid only for LS2080A SoC and
 	 * its personalitiesi
 	 */
-	svr_dev_id = get_svr() >> 16;
-	if (svr_dev_id == SVR_DEV_LS2080A)
+	svr_dev_id = get_svr();
+	if (IS_SVR_DEV(svr_dev_id, SVR_DEV(SVR_LS2080A)))
 		erratum_a009635();
 #endif
 #if defined(CONFIG_SYS_FSL_ERRATUM_A009942) && defined(CONFIG_SYS_FSL_DDR)
@@ -521,11 +557,16 @@ int arch_early_init_r(void)
 	fsl_rgmii_init();
 #endif
 
+	config_core_prefetch();
+
 #ifdef CONFIG_SYS_HAS_SERDES
 	fsl_serdes_init();
 #endif
 #ifdef CONFIG_FMAN_ENET
 	fman_enet_init();
+#endif
+#ifdef CONFIG_SYS_DPAA_QBMAN
+	setup_qbman_portals();
 #endif
 	return 0;
 }
@@ -536,7 +577,7 @@ int timer_init(void)
 #ifdef CONFIG_FSL_LSCH3
 	u32 __iomem *cltbenr = (u32 *)CONFIG_SYS_FSL_PMU_CLTBENR;
 #endif
-#ifdef CONFIG_ARCH_LS2080A
+#if defined(CONFIG_ARCH_LS2080A) || defined(CONFIG_ARCH_LS1088A)
 	u32 __iomem *pctbenr = (u32 *)FSL_PMU_PCTBENR_OFFSET;
 	u32 svr_dev_id;
 #endif
@@ -555,7 +596,7 @@ int timer_init(void)
 	out_le32(cltbenr, 0xf);
 #endif
 
-#ifdef CONFIG_ARCH_LS2080A
+#if defined(CONFIG_ARCH_LS2080A) || defined(CONFIG_ARCH_LS1088A)
 	/*
 	 * In certain Layerscape SoCs, the clock for each core's
 	 * has an enable bit in the PMU Physical Core Time Base Enable
@@ -566,8 +607,8 @@ int timer_init(void)
 	 * For LS2080A SoC and its personalities, timer controller
 	 * offset is different
 	 */
-	svr_dev_id = get_svr() >> 16;
-	if (svr_dev_id == SVR_DEV_LS2080A)
+	svr_dev_id = get_svr();
+	if (IS_SVR_DEV(svr_dev_id, SVR_DEV(SVR_LS2080A)))
 		cntcr = (u32 *)SYS_FSL_LS2080A_LS2085A_TIMER_ADDR;
 
 #endif
@@ -602,6 +643,7 @@ void __efi_runtime EFIAPI efi_reset_system(
 	switch (reset_type) {
 	case EFI_RESET_COLD:
 	case EFI_RESET_WARM:
+	case EFI_RESET_PLATFORM_SPECIFIC:
 		reset_cpu(0);
 		break;
 	case EFI_RESET_SHUTDOWN:
@@ -612,9 +654,9 @@ void __efi_runtime EFIAPI efi_reset_system(
 	while (1) { }
 }
 
-void efi_reset_system_init(void)
+efi_status_t efi_reset_system_init(void)
 {
-       efi_add_runtime_mmio(&rstcr, sizeof(*rstcr));
+	return efi_add_runtime_mmio(&rstcr, sizeof(*rstcr));
 }
 
 #endif

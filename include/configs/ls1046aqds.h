@@ -1,21 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2016 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1046AQDS_H__
 #define __LS1046AQDS_H__
 
 #include "ls1046a_common.h"
-
-#if defined(CONFIG_NAND_BOOT) || defined(CONFIG_SD_BOOT)
-#define CONFIG_SYS_TEXT_BASE		0x82000000
-#elif defined(CONFIG_QSPI_BOOT)
-#define CONFIG_SYS_TEXT_BASE		0x40100000
-#else
-#define CONFIG_SYS_TEXT_BASE		0x60100000
-#endif
 
 #ifndef __ASSEMBLY__
 unsigned long get_board_sys_clk(void);
@@ -136,11 +127,6 @@ unsigned long get_board_ddr_clk(void);
 #define CFG_LPUART_EN		0x2
 #endif
 
-/* SATA */
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
-#define CONFIG_SCSI_AHCI_PLAT
-
 /* EEPROM */
 #define CONFIG_ID_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_NXID
@@ -149,13 +135,6 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN		1
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	3
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS	5
-
-#define CONFIG_SYS_SATA				AHCI_BASE_ADDR
-
-#define CONFIG_SYS_SCSI_MAX_SCSI_ID		1
-#define CONFIG_SYS_SCSI_MAX_LUN			1
-#define CONFIG_SYS_SCSI_MAX_DEVICE		(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
-						CONFIG_SYS_SCSI_MAX_LUN)
 
 /*
  * IFC Definitions
@@ -178,12 +157,13 @@ unsigned long get_board_ddr_clk(void);
 					CSOR_NOR_TRHZ_80)
 #define CONFIG_SYS_NOR_FTIM0		(FTIM0_NOR_TACSE(0x4) | \
 					FTIM0_NOR_TEADC(0x5) | \
+					FTIM0_NOR_TAVDS(0x6) | \
 					FTIM0_NOR_TEAHC(0x5))
 #define CONFIG_SYS_NOR_FTIM1		(FTIM1_NOR_TACO(0x35) | \
 					FTIM1_NOR_TRAD_NOR(0x1a) | \
 					FTIM1_NOR_TSEQRAD_NOR(0x13))
-#define CONFIG_SYS_NOR_FTIM2		(FTIM2_NOR_TCS(0x4) | \
-					FTIM2_NOR_TCH(0x4) | \
+#define CONFIG_SYS_NOR_FTIM2		(FTIM2_NOR_TCS(0x8) | \
+					FTIM2_NOR_TCH(0x8) | \
 					FTIM2_NOR_TWPH(0xe) | \
 					FTIM2_NOR_TWP(0x1c))
 #define CONFIG_SYS_NOR_FTIM3		0
@@ -408,8 +388,6 @@ unsigned long get_board_ddr_clk(void);
  * Miscellaneous configurable options
  */
 #define CONFIG_MISC_INIT_R
-#define CONFIG_SYS_LONGHELP		/* undef to save memory */
-#define CONFIG_AUTO_COMPLETE
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		0x9fffffff

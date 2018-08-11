@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2010-2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -15,10 +14,8 @@
 #define CONFIG_NAND_FSL_IFC
 
 #ifdef CONFIG_SDCARD
-#define CONFIG_SPL_MMC_MINIMAL
 #define CONFIG_SPL_FLUSH_IMAGE
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.bin"
-#define CONFIG_SYS_TEXT_BASE		0x11001000
 #define CONFIG_SPL_TEXT_BASE		0xD0001000
 #define CONFIG_SPL_PAD_TO		0x18000
 #define CONFIG_SPL_MAX_SIZE		(96 * 1024)
@@ -37,13 +34,11 @@
 #ifdef CONFIG_SPIFLASH
 #ifdef CONFIG_SECURE_BOOT
 #define CONFIG_RAMBOOT_SPIFLASH
-#define CONFIG_SYS_TEXT_BASE		0x11000000
 #define CONFIG_RESET_VECTOR_ADDRESS	0x110bfffc
 #else
 #define CONFIG_SPL_SPI_FLASH_MINIMAL
 #define CONFIG_SPL_FLUSH_IMAGE
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.bin"
-#define CONFIG_SYS_TEXT_BASE			0x11001000
 #define CONFIG_SPL_TEXT_BASE			0xD0001000
 #define CONFIG_SPL_PAD_TO			0x18000
 #define CONFIG_SPL_MAX_SIZE			(96 * 1024)
@@ -67,7 +62,6 @@
 #define CONFIG_SPL_FLUSH_IMAGE
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.bin"
 
-#define CONFIG_SYS_TEXT_BASE		0x00201000
 #define CONFIG_SPL_TEXT_BASE		0xFFFFE000
 #define CONFIG_SPL_MAX_SIZE		8192
 #define CONFIG_SPL_RELOC_TEXT_BASE	0x00100000
@@ -104,19 +98,13 @@
 #define CONFIG_SPL_PAD_TO	0x20000
 #define CONFIG_TPL_PAD_TO	0x20000
 #define CONFIG_SPL_TARGET	"u-boot-with-spl.bin"
-#define CONFIG_SYS_TEXT_BASE	0x11001000
 #define CONFIG_SYS_LDSCRIPT	"arch/powerpc/cpu/mpc85xx/u-boot-nand.lds"
 #endif
 #endif
 
 #ifdef CONFIG_NAND_SECBOOT	/* NAND Boot */
 #define CONFIG_RAMBOOT_NAND
-#define CONFIG_SYS_TEXT_BASE		0x11000000
 #define CONFIG_RESET_VECTOR_ADDRESS	0x110bfffc
-#endif
-
-#ifndef CONFIG_SYS_TEXT_BASE
-#define CONFIG_SYS_TEXT_BASE		0xeff40000
 #endif
 
 #ifndef CONFIG_RESET_VECTOR_ADDRESS
@@ -191,7 +179,6 @@
 #define CONFIG_PCI_SCAN_SHOW		/* show pci devices on startup */
 #endif
 
-#define CONFIG_TSEC_ENET
 #define CONFIG_ENV_OVERWRITE
 
 #define CONFIG_DDR_CLK_FREQ	66666666 /* DDRCLK on P1010 RDB */
@@ -215,7 +202,6 @@
 
 #define CONFIG_SYS_MEMTEST_START	0x00200000	/* memtest works on */
 #define CONFIG_SYS_MEMTEST_END		0x1fffffff
-#define CONFIG_PANIC_HANG		/* do not reset board on panic */
 
 /* DDR Setup */
 #define CONFIG_SYS_DDR_RAW_TIMING
@@ -490,8 +476,6 @@ extern unsigned long get_sdram_size(void);
 #endif
 #endif
 
-#define CONFIG_BOARD_EARLY_INIT_R
-
 #define CONFIG_SYS_INIT_RAM_LOCK
 #define CONFIG_SYS_INIT_RAM_ADDR	0xffd00000 /* stack in RAM */
 #define CONFIG_SYS_INIT_RAM_SIZE	0x00004000 /* End of used area in RAM */
@@ -541,7 +525,6 @@ extern unsigned long get_sdram_size(void);
 #endif
 
 /* Serial Port */
-#define CONFIG_CONS_INDEX	1
 #undef	CONFIG_SERIAL_SOFTWARE_FIFO
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	1
@@ -634,9 +617,7 @@ extern unsigned long get_sdram_size(void);
 #endif	/* CONFIG_TSEC_ENET */
 
 /* SATA */
-#define CONFIG_FSL_SATA
 #define CONFIG_FSL_SATA_V2
-#define CONFIG_LIBATA
 
 #ifdef CONFIG_FSL_SATA
 #define CONFIG_SYS_SATA_MAX_DEVICE	2
@@ -651,7 +632,6 @@ extern unsigned long get_sdram_size(void);
 #endif /* #ifdef CONFIG_FSL_SATA  */
 
 #ifdef CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	CONFIG_SYS_MPC85xx_ESDHC_ADDR
 #endif
 
@@ -714,9 +694,6 @@ extern unsigned long get_sdram_size(void);
 /*
  * Miscellaneous configurable options
  */
-#define CONFIG_SYS_LONGHELP			/* undef to save memory	*/
-#define CONFIG_CMDLINE_EDITING			/* Command-line editing */
-#define CONFIG_AUTO_COMPLETE			/* add autocompletion support */
 #define CONFIG_SYS_LOAD_ADDR	0x2000000	/* default load address */
 
 /*

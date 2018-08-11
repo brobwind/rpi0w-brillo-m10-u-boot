@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2017 NXP
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
  * Layerscape PCIe driver
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -255,7 +254,7 @@ int ls_pcie_conf_address(struct udevice *bus, pci_dev_t bdf,
 		return 0;
 	}
 
-	busdev = PCIE_ATU_BUS(PCI_BUS(bdf)) |
+	busdev = PCIE_ATU_BUS(PCI_BUS(bdf) - bus->seq) |
 		 PCIE_ATU_DEV(PCI_DEV(bdf)) |
 		 PCIE_ATU_FUNC(PCI_FUNC(bdf));
 

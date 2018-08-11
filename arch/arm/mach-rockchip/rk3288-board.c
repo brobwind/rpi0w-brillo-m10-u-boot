@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2015 Google, Inc
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -22,31 +21,6 @@
 #include <power/regulator.h>
 
 DECLARE_GLOBAL_DATA_PTR;
-
-#define PMU_BASE	0xff730000
-
-static void setup_boot_mode(void)
-{
-	struct rk3288_pmu *const pmu = (void *)PMU_BASE;
-	int boot_mode = readl(&pmu->sys_reg[0]);
-
-	debug("boot mode %x.\n", boot_mode);
-
-	/* Clear boot mode */
-	writel(BOOT_NORMAL, &pmu->sys_reg[0]);
-
-	switch (boot_mode) {
-	case BOOT_FASTBOOT:
-		printf("enter fastboot!\n");
-		env_set("preboot", "setenv preboot; fastboot usb0");
-		break;
-	case BOOT_UMS:
-		printf("enter UMS!\n");
-		env_set("preboot", "setenv preboot; if mmc dev 0;"
-		       "then ums mmc 0; else ums mmc 1;fi");
-		break;
-	}
-}
 
 __weak int rk_board_late_init(void)
 {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2011 - 2012 Samsung Electronics
  * EXT4 filesystem implementation in Uboot by
@@ -15,8 +16,6 @@
  * Copyright (C) 2003, 2004  Free Software Foundation, Inc.
  *
  * ext4write : Based on generic ext4 protocol.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -660,6 +659,11 @@ static int search_dir(struct ext2_inode *parent_inode, char *dirname)
 
 		offset = 0;
 		do {
+			if (offset & 3) {
+				printf("Badly aligned ext2_dirent\n");
+				break;
+			}
+
 			dir = (struct ext2_dirent *)(block_buffer + offset);
 			direntname = (char*)(dir) + sizeof(struct ext2_dirent);
 
@@ -880,6 +884,11 @@ static int unlink_filename(char *filename, unsigned int blknr)
 
 	offset = 0;
 	do {
+		if (offset & 3) {
+			printf("Badly aligned ext2_dirent\n");
+			break;
+		}
+
 		previous_dir = dir;
 		dir = (struct ext2_dirent *)(block_buffer + offset);
 		direntname = (char *)(dir) + sizeof(struct ext2_dirent);
@@ -2333,7 +2342,7 @@ int ext4fs_mount(unsigned part_length)
 
 	/* Make sure this is an ext2 filesystem. */
 	if (le16_to_cpu(data->sblock.magic) != EXT2_MAGIC)
-		goto fail;
+		goto fail_noerr;
 
 
 	if (le32_to_cpu(data->sblock.revision_level) == 0) {
@@ -2369,6 +2378,7 @@ int ext4fs_mount(unsigned part_length)
 	return 1;
 fail:
 	printf("Failed to mount ext2 filesystem...\n");
+fail_noerr:
 	free(data);
 	ext4fs_root = NULL;
 

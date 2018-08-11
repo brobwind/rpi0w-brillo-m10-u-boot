@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2014-2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Extracted from armv8/start.S
  */
@@ -37,9 +36,8 @@ ENTRY(get_gic_offset)
 	ldr     x2, =DCFG_CCSR_SVR
 	ldr	w2, [x2]
 	rev	w2, w2
-	mov	w3, w2
-	ands	w3, w3, #SVR_WO_E << 8
-	mov	w4, #SVR_LS1043A << 8
+	lsr	w3, w2, #16
+	ldr	w4, =SVR_DEV(SVR_LS1043A)
 	cmp	w3, w4
 	b.ne	1f
 	ands	w2, w2, #0xff
@@ -92,7 +90,7 @@ ENTRY(lowlevel_init)
 	 */
 	bl	get_svr
 	lsr	w0, w0, #16
-	ldr	w1, =SVR_DEV_LS2080A
+	ldr	w1, =SVR_DEV(SVR_LS2080A)
 	cmp	w0, w1
 	b.eq	1f
 
@@ -224,7 +222,7 @@ ENTRY(lowlevel_init)
 	 */
 	bl	get_svr
 	lsr	w0, w0, #16
-	ldr	w1, =SVR_DEV_LS2080A
+	ldr	w1, =SVR_DEV(SVR_LS2080A)
 	cmp	w0, w1
 	b.eq	1f
 
@@ -235,39 +233,45 @@ ENTRY(lowlevel_init)
 	 * NOTE: As per the CCSR map doc, TZASC 3 and TZASC 4 are just
 	 * 	 placeholders.
 	 */
+
+.macro tzasc_prog, xreg
+
+	mov     x12, TZASC1_BASE
+	mov     x16, #0x10000
+	mul     x14, \xreg, x16
+	add     x14, x14,x12
+	mov 	x1, #0x8
+	add     x1, x1, x14
+
+	ldr     w0, [x1]		/* Filter 0 Gate Keeper Register */
+	orr     w0, w0, #1 << 0		/* Set open_request for Filter 0 */
+	str     w0, [x1]
+
+	mov	x1, #0x110
+	add     x1, x1, x14
+
+	ldr     w0, [x1]		/* Region-0 Attributes Register */
+	orr     w0, w0, #1 << 31	/* Set Sec global write en, Bit[31] */
+	orr     w0, w0, #1 << 30	/* Set Sec global read en, Bit[30] */
+	str     w0, [x1]
+
+	mov	x1, #0x114
+	add     x1, x1, x14
+
+	ldr     w0, [x1]		/* Region-0 Access Register */
+	mov     w0, #0xFFFFFFFF		/* Set nsaid_wr_en and nsaid_rd_en */
+	str     w0, [x1]
+.endm
+
 #ifdef CONFIG_FSL_TZASC_1
-	ldr	x1, =TZASC_GATE_KEEPER(0)
-	ldr	w0, [x1]		/* Filter 0 Gate Keeper Register */
-	orr	w0, w0, #1 << 0		/* Set open_request for Filter 0 */
-	str	w0, [x1]
+	mov     x13, #0
+	tzasc_prog	x13
 
-	ldr	x1, =TZASC_REGION_ATTRIBUTES_0(0)
-	ldr	w0, [x1]		/* Region-0 Attributes Register */
-	orr	w0, w0, #1 << 31	/* Set Sec global write en, Bit[31] */
-	orr	w0, w0, #1 << 30	/* Set Sec global read en, Bit[30] */
-	str	w0, [x1]
-
-	ldr	x1, =TZASC_REGION_ID_ACCESS_0(0)
-	ldr	w0, [x1]		/* Region-0 Access Register */
-	mov	w0, #0xFFFFFFFF		/* Set nsaid_wr_en and nsaid_rd_en */
-	str	w0, [x1]
 #endif
 #ifdef CONFIG_FSL_TZASC_2
-	ldr	x1, =TZASC_GATE_KEEPER(1)
-	ldr	w0, [x1]		/* Filter 0 Gate Keeper Register */
-	orr	w0, w0, #1 << 0		/* Set open_request for Filter 0 */
-	str	w0, [x1]
+	mov     x13, #1
+	tzasc_prog	x13
 
-	ldr	x1, =TZASC_REGION_ATTRIBUTES_0(1)
-	ldr	w0, [x1]		/* Region-1 Attributes Register */
-	orr	w0, w0, #1 << 31	/* Set Sec global write en, Bit[31] */
-	orr	w0, w0, #1 << 30	/* Set Sec global read en, Bit[30] */
-	str	w0, [x1]
-
-	ldr	x1, =TZASC_REGION_ID_ACCESS_0(1)
-	ldr	w0, [x1]		/* Region-1 Attributes Register */
-	mov	w0, #0xFFFFFFFF		/* Set nsaid_wr_en and nsaid_rd_en */
-	str	w0, [x1]
 #endif
 	isb
 	dsb	sy
