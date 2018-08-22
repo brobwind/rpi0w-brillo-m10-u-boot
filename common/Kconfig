@@ -569,6 +569,13 @@ config DISPLAY_BOARDINFO
 	  when U-Boot starts up. The board function checkboard() is called
 	  to do this.
 
+config DISPLAY_BOARDINFO_LATE
+	bool "Display information about the board during late start up"
+	help
+	  Display information about the board that U-Boot is running on after
+	  the relocation phase. The board function checkboard() is called to do
+	  this.
+
 config ANDROID_BOOTLOADER
 	bool "Support for Android Bootloader boot flow"
 	default n
@@ -591,13 +598,6 @@ config ANDROID_AB
 	  information provided by userspace via the Android boot_ctrl HAL. This
 	  allows a bootloader to try a new version of the system but roll back
 	  to previous version if the new one didn't boot all the way.
-
-config DISPLAY_BOARDINFO_LATE
-	bool "Display information about the board during late start up"
-	help
-	  Display information about the board that U-Boot is running on after
-	  the relocation phase. The board function checkboard() is called to do
-	  this.
 
 menu "Start-up hooks"
 
