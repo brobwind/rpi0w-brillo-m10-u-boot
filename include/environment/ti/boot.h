@@ -38,7 +38,7 @@
 	"name=uboot-env,start=2432K,size=256K,uuid=${uuid_gpt_reserved};" \
 	"name=misc,size=128K,uuid=${uuid_gpt_misc};" \
 	"name=recovery,size=40M,uuid=${uuid_gpt_recovery};" \
-	"name=boot,size=10M,uuid=${uuid_gpt_boot};" \
+	"name=boot,size=20M,uuid=${uuid_gpt_boot};" \
 	"name=system,size=1024M,uuid=${uuid_gpt_system};" \
 	"name=vendor,size=256M,uuid=${uuid_gpt_vendor};" \
 	VBMETA_PART \
