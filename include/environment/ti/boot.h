@@ -23,18 +23,6 @@
 #define VBMETA_PART			""
 #endif
 
-#if defined(CONFIG_CMD_AB_SELECT)
-#define COMMON_PARTS \
-	"name=boot_a,size=10M,uuid=${uuid_gpt_boot_a};" \
-	"name=boot_b,size=10M,uuid=${uuid_gpt_boot_b};" \
-	"name=system_a,size=1024M,uuid=${uuid_gpt_system_a};" \
-	"name=system_b,size=1024M,uuid=${uuid_gpt_system_b};"
-#else
-#define COMMON_PARTS \
-	"name=boot,size=10M,uuid=${uuid_gpt_boot};" \
-	"name=system,size=1024M,uuid=${uuid_gpt_system};"
-#endif
-
 #ifndef PARTS_DEFAULT
 /* Define the default GPT table for eMMC */
 #define PARTS_DEFAULT \
@@ -50,7 +38,8 @@
 	"name=uboot-env,start=2432K,size=256K,uuid=${uuid_gpt_reserved};" \
 	"name=misc,size=128K,uuid=${uuid_gpt_misc};" \
 	"name=recovery,size=40M,uuid=${uuid_gpt_recovery};" \
-	COMMON_PARTS \
+	"name=boot,size=10M,uuid=${uuid_gpt_boot};" \
+	"name=system,size=1024M,uuid=${uuid_gpt_system};" \
 	"name=vendor,size=256M,uuid=${uuid_gpt_vendor};" \
 	VBMETA_PART \
 	"name=userdata,size=-,uuid=${uuid_gpt_userdata}"
@@ -67,35 +56,6 @@
 #else
 #define AVB_VERIFY_CHECK ""
 #define AVB_VERIFY_CMD ""
-#endif
-
-#define CONTROL_PARTITION "misc"
-
-#if defined(CONFIG_CMD_AB_SELECT)
-#define AB_SELECT \
-	"if part number mmc 1 " CONTROL_PARTITION " control_part_number; " \
-	"then " \
-		"echo " CONTROL_PARTITION \
-			" partition number:${control_part_number};" \
-		"ab_select slot_name mmc ${mmcdev}:${control_part_number};" \
-	"else " \
-		"echo " CONTROL_PARTITION " partition not found;" \
-		"exit;" \
-	"fi;" \
-	"setenv slot_suffix _${slot_name};" \
-	"if part number mmc ${mmcdev} system${slot_suffix} " \
-	"system_part_number; then " \
-		"setenv bootargs_ab " \
-			"ro root=/dev/mmcblk${mmcdev}p${system_part_number} " \
-			"rootwait init=/init skip_initramfs " \
-			"androidboot.slot_suffix=${slot_suffix};" \
-		"echo A/B cmdline addition: ${bootargs_ab};" \
-		"setenv bootargs ${bootargs} ${bootargs_ab};" \
-	"else " \
-		"echo system${slot_suffix} partition not found;" \
-	"fi;"
-#else
-#define AB_SELECT ""
 #endif
 
 #define DEFAULT_COMMON_BOOT_TI_ARGS \
@@ -126,16 +86,10 @@
 		"mmc dev $mmcdev; " \
 		"mmc rescan; " \
 		AVB_VERIFY_CHECK \
-		AB_SELECT \
-		"if part start mmc ${mmcdev} boot${slot_suffix} boot_start; " \
-		"then " \
-			"part size mmc ${mmcdev} boot${slot_suffix} " \
-				"boot_size; " \
-			"mmc read ${loadaddr} ${boot_start} ${boot_size}; " \
-			"bootm ${loadaddr}#${fdtfile}; " \
-		"else " \
-			"echo boot${slot_suffix} partition not found; " \
-		"fi;\0"
+		"part start mmc ${mmcdev} boot boot_start; " \
+		"part size mmc ${mmcdev} boot boot_size; " \
+		"mmc read ${loadaddr} ${boot_start} ${boot_size}; " \
+		"bootm ${loadaddr}#${fdtfile};\0 "
 
 #ifdef CONFIG_OMAP54XX
 
