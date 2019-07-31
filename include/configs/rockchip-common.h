@@ -55,8 +55,7 @@
 	"name=env,start=4064K,size=32K,uuid=${uuid_gpt_env};" \
 	"name=loader2,start=8MB,size=4MB,uuid=${uuid_gpt_loader2};" \
 	"name=trust,size=4M,uuid=${uuid_gpt_atf};" \
-	"name=boot,size=112M,bootable,uuid=${uuid_gpt_boot};" \
-	"name=rootfs,size=-,uuid="ROOT_UUID
+	"name=rootfs,bootable,size=-,uuid="ROOT_UUID
 
 #endif
 
