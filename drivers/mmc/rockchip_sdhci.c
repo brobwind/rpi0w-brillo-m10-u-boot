@@ -58,7 +58,8 @@ static int arasan_sdhci_probe(struct udevice *dev)
 		printf("%s fail to get clk\n", __func__);
 	}
 
-	host->quirks = SDHCI_QUIRK_WAIT_SEND_CMD;
+	host->quirks = SDHCI_QUIRK_WAIT_SEND_CMD |
+		SDHCI_QUIRK_BROKEN_HISPD_MODE;
 	host->max_clk = max_frequency;
 	/*
 	 * The sdhci-driver only supports 4bit and 8bit, as sdhci_setup_cfg
