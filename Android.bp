@@ -15,8 +15,8 @@
 // NOTE: image-sig (RSA signature) support is broken because the U-Boot code
 // requires API features from openssl which are not provided by boringssl
 
-cc_binary_host {
-    name: "mkimage",
+cc_defaults {
+    name: "uboot_host_defaults",
 
     cflags: [
         "-D__KERNEL_STRICT_NAMES",
@@ -31,6 +31,22 @@ cc_binary_host {
         "-include linux/kconfig.h",
         "-include compiler.h",
     ],
+
+    local_include_dirs: [
+        "prebuilt-intermediates",
+    ],
+
+    target: {
+        darwin: {
+            enabled: false,
+        },
+    },
+}
+
+cc_binary_host {
+    name: "mkimage",
+
+    defaults: ["uboot_host_defaults"],
 
     srcs: [
         "common/bootm.c",
@@ -90,14 +106,23 @@ cc_binary_host {
     ],
 
     local_include_dirs: [
-        "prebuilt-intermediates",
         "scripts/dtc/libfdt",
         "tools",
     ],
+}
 
-    target: {
-        darwin: {
-            enabled: false,
-        },
-    },
+cc_binary_host {
+    name: "mkenvimage",
+
+    defaults: ["uboot_host_defaults"],
+
+    srcs: [
+        "lib/crc32.c",
+        "tools/mkenvimage.c",
+        "tools/os_support.c",
+    ],
+
+    local_include_dirs: [
+        "tools",
+    ],
 }
