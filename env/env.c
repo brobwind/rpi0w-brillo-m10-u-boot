@@ -68,6 +68,9 @@ static enum env_location env_locations[] = {
 #ifdef CONFIG_ENV_IS_IN_NVRAM
 	ENVL_NVRAM,
 #endif
+#ifdef CONFIG_ENV_IS_IN_RAW_DISK
+    ENVL_RAW_DISK,
+#endif
 #ifdef CONFIG_ENV_IS_IN_REMOTE
 	ENVL_REMOTE,
 #endif
