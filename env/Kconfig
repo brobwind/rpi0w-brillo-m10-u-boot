@@ -6,8 +6,8 @@ config ENV_IS_NOWHERE
 		     !ENV_IS_IN_FAT && !ENV_IS_IN_FLASH && \
 		     !ENV_IS_IN_MMC && !ENV_IS_IN_NAND && \
 		     !ENV_IS_IN_NVRAM && !ENV_IS_IN_ONENAND && \
-		     !ENV_IS_IN_REMOTE && !ENV_IS_IN_SPI_FLASH && \
-		     !ENV_IS_IN_UBI
+		     !ENV_IS_IN_RAW_DISK && !ENV_IS_IN_REMOTE && \
+		     !ENV_IS_IN_SPI_FLASH && !ENV_IS_IN_UBI
 	help
 	  Define this if you don't want to or can't have an environment stored
 	  on a storage medium. In this case the environment will still exist
@@ -63,6 +63,13 @@ config ENV_IS_IN_EXT4
 	select EXT4_WRITE
 	help
 	  Define this if you want to use the EXT4 file system for the environment.
+
+config ENV_IS_IN_RAW_DISK
+	bool "Environment is in a raw partition on a hard disk"
+	depends on !CHAIN_OF_TRUST
+	help
+	  Define this if you want to use a raw disk or partition for the
+	  environment.
 
 config ENV_IS_IN_FLASH
 	bool "Environment in flash memory"
@@ -441,6 +448,30 @@ config ENV_EXT4_INTERFACE
 config ENV_EXT4_DEVICE_AND_PART
 	string "Device and partition for where to store the environemt in EXT4"
 	depends on ENV_IS_IN_EXT4
+	help
+	  Define this to a string to specify the partition of the device. It can
+	  be as following:
+
+	    "D:P", "D:0", "D", "D:" or "D:auto" (D, P are integers. And P >= 1)
+	       - "D:P": device D partition P. Error occurs if device D has no
+	                partition table.
+	       - "D:0": device D.
+	       - "D" or "D:": device D partition 1 if device D has partition
+	                      table, or the whole device D if has no partition
+	                      table.
+	       - "D:auto": first partition in device D with bootable flag set.
+	                   If none, first valid partition in device D. If no
+	                   partition table then means device D.
+
+config ENV_RAW_DISK_INTERFACE
+	string "Name of the block device for the environment"
+	depends on ENV_IS_IN_RAW_DISK
+	help
+	  Define this to a string that is the name of the block device.
+
+config ENV_RAW_DISK_DEVICE_AND_PART
+	string "Device and partition for where to store the environment image"
+	depends on ENV_IS_IN_RAW_DISK
 	help
 	  Define this to a string to specify the partition of the device. It can
 	  be as following:
