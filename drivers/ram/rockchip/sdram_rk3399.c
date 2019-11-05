@@ -1444,7 +1444,6 @@ static void dram_all_config(struct dram_info *dram,
 		if (info->cap_info.cs1_row)
 			SYS_REG_ENC_CS1_ROW(info->cap_info.cs1_row, sys_reg2,
 					    sys_reg3, channel);
-
 		sys_reg3 |= SYS_REG_ENC_CS1_COL(info->cap_info.col, channel);
 		sys_reg3 |= SYS_REG_ENC_VERSION(DDR_SYS_REG_VERSION);
 
@@ -1487,6 +1486,84 @@ static void dram_all_config(struct dram_info *dram,
 		PRESET_GPIO1_HOLD(1),
 		&dram->pmucru->pmucru_rstnhold_con[1]);
 	clrsetbits_le32(&dram->cru->glb_rst_con, 0x3, 0x3);
+}
+
+static void set_cap_relate_config(const struct chan_info *chan,
+				  struct rk3399_sdram_params *params,
+				  unsigned int channel)
+{
+	u32 *denali_ctl = chan->pctl->denali_ctl;
+	u32 tmp;
+	struct rk3399_msch_timings *noc_timing;
+
+	if (params->base.dramtype == LPDDR3) {
+		tmp = (8 << params->ch[channel].cap_info.bw) /
+			(8 << params->ch[channel].cap_info.dbw);
+
+		/**
+		 * memdata_ratio
+		 * 1 -> 0, 2 -> 1, 4 -> 2
+		 */
+		clrsetbits_le32(&denali_ctl[197], 0x7,
+				(tmp >> 1));
+		clrsetbits_le32(&denali_ctl[198], 0x7 << 8,
+				(tmp >> 1) << 8);
+	}
+
+	noc_timing = &params->ch[channel].noc_timings;
+
+	/*
+	 * noc timing bw relate timing is 32 bit, and real bw is 16bit
+	 * actually noc reg is setting at function dram_all_config
+	 */
+	if (params->ch[channel].cap_info.bw == 16 &&
+	    noc_timing->ddrmode.b.mwrsize == 2) {
+		if (noc_timing->ddrmode.b.burstsize)
+			noc_timing->ddrmode.b.burstsize -= 1;
+		noc_timing->ddrmode.b.mwrsize -= 1;
+		noc_timing->ddrtimingc0.b.burstpenalty *= 2;
+		noc_timing->ddrtimingc0.b.wrtomwr *= 2;
+	}
+}
+
+static u32 calculate_ddrconfig(struct rk3399_sdram_params *params, u32 channel)
+{
+	unsigned int cs0_row = params->ch[channel].cap_info.cs0_row;
+	unsigned int col = params->ch[channel].cap_info.col;
+	unsigned int bw = params->ch[channel].cap_info.bw;
+	u16  ddr_cfg_2_rbc[] = {
+		/*
+		 * [6]	  highest bit col
+		 * [5:3]  max row(14+n)
+		 * [2]    insertion row
+		 * [1:0]  col(9+n),col, data bus 32bit
+		 *
+		 * highbitcol, max_row, insertion_row,  col
+		 */
+		((0 << 6) | (2 << 3) | (0 << 2) | 0), /* 0 */
+		((0 << 6) | (2 << 3) | (0 << 2) | 1), /* 1 */
+		((0 << 6) | (1 << 3) | (0 << 2) | 2), /* 2 */
+		((0 << 6) | (0 << 3) | (0 << 2) | 3), /* 3 */
+		((0 << 6) | (2 << 3) | (1 << 2) | 1), /* 4 */
+		((0 << 6) | (1 << 3) | (1 << 2) | 2), /* 5 */
+		((1 << 6) | (0 << 3) | (0 << 2) | 2), /* 6 */
+		((1 << 6) | (1 << 3) | (0 << 2) | 2), /* 7 */
+	};
+	u32 i;
+
+	col -= (bw == 2) ? 0 : 1;
+	col -= 9;
+
+	for (i = 0; i < 4; i++) {
+		if ((col == (ddr_cfg_2_rbc[i] & 0x3)) &&
+		    (cs0_row <= (((ddr_cfg_2_rbc[i] >> 3) & 0x7) + 14)))
+			break;
+	}
+
+	if (i >= 4)
+		i = -EINVAL;
+
+	return i;
 }
 
 #if !defined(CONFIG_RAM_RK3399_LPDDR4)
@@ -1587,84 +1664,6 @@ static u32 get_ddr_stride(struct rk3399_pmusgrf_regs *pmusgrf)
 static void set_ddr_stride(struct rk3399_pmusgrf_regs *pmusgrf, u32 stride)
 {
 	rk_clrsetreg(&pmusgrf->soc_con4, 0x1f << 10, stride << 10);
-}
-
-static void set_cap_relate_config(const struct chan_info *chan,
-				  struct rk3399_sdram_params *params,
-				  unsigned int channel)
-{
-	u32 *denali_ctl = chan->pctl->denali_ctl;
-	u32 tmp;
-	struct rk3399_msch_timings *noc_timing;
-
-	if (params->base.dramtype == LPDDR3) {
-		tmp = (8 << params->ch[channel].cap_info.bw) /
-			(8 << params->ch[channel].cap_info.dbw);
-
-		/**
-		 * memdata_ratio
-		 * 1 -> 0, 2 -> 1, 4 -> 2
-		 */
-		clrsetbits_le32(&denali_ctl[197], 0x7,
-				(tmp >> 1));
-		clrsetbits_le32(&denali_ctl[198], 0x7 << 8,
-				(tmp >> 1) << 8);
-	}
-
-	noc_timing = &params->ch[channel].noc_timings;
-
-	/*
-	 * noc timing bw relate timing is 32 bit, and real bw is 16bit
-	 * actually noc reg is setting at function dram_all_config
-	 */
-	if (params->ch[channel].cap_info.bw == 16 &&
-	    noc_timing->ddrmode.b.mwrsize == 2) {
-		if (noc_timing->ddrmode.b.burstsize)
-			noc_timing->ddrmode.b.burstsize -= 1;
-		noc_timing->ddrmode.b.mwrsize -= 1;
-		noc_timing->ddrtimingc0.b.burstpenalty *= 2;
-		noc_timing->ddrtimingc0.b.wrtomwr *= 2;
-	}
-}
-
-static u32 calculate_ddrconfig(struct rk3399_sdram_params *params, u32 channel)
-{
-	unsigned int cs0_row = params->ch[channel].cap_info.cs0_row;
-	unsigned int col = params->ch[channel].cap_info.col;
-	unsigned int bw = params->ch[channel].cap_info.bw;
-	u16  ddr_cfg_2_rbc[] = {
-		/*
-		 * [6]	  highest bit col
-		 * [5:3]  max row(14+n)
-		 * [2]    insertion row
-		 * [1:0]  col(9+n),col, data bus 32bit
-		 *
-		 * highbitcol, max_row, insertion_row,  col
-		 */
-		((0 << 6) | (2 << 3) | (0 << 2) | 0), /* 0 */
-		((0 << 6) | (2 << 3) | (0 << 2) | 1), /* 1 */
-		((0 << 6) | (1 << 3) | (0 << 2) | 2), /* 2 */
-		((0 << 6) | (0 << 3) | (0 << 2) | 3), /* 3 */
-		((0 << 6) | (2 << 3) | (1 << 2) | 1), /* 4 */
-		((0 << 6) | (1 << 3) | (1 << 2) | 2), /* 5 */
-		((1 << 6) | (0 << 3) | (0 << 2) | 2), /* 6 */
-		((1 << 6) | (1 << 3) | (0 << 2) | 2), /* 7 */
-	};
-	u32 i;
-
-	col -= (bw == 2) ? 0 : 1;
-	col -= 9;
-
-	for (i = 0; i < 4; i++) {
-		if ((col == (ddr_cfg_2_rbc[i] & 0x3)) &&
-		    (cs0_row <= (((ddr_cfg_2_rbc[i] >> 3) & 0x7) + 14)))
-			break;
-	}
-
-	if (i >= 4)
-		i = -EINVAL;
-
-	return i;
 }
 
 /**
@@ -2328,7 +2327,7 @@ static int lpddr4_set_ctl(struct dram_info *dram,
 			  struct rk3399_sdram_params *params, u32 ctl, u32 hz)
 {
 	u32 channel;
-	int ret_clk, ret[2];
+	int ret_clk, ret;
 
 	/* cci idle req stall */
 	writel(0x70007, &dram->grf->soc_con0);
@@ -2371,13 +2370,9 @@ static int lpddr4_set_ctl(struct dram_info *dram,
 		for (channel = 0; channel < 2; channel++) {
 			if (!(params->ch[channel].cap_info.col))
 				continue;
-			ret[channel] = data_training(dram, channel, params,
+			ret = data_training(dram, channel, params,
 						     PI_FULL_TRAINING);
-		}
-		for (channel = 0; channel < 2; channel++) {
-			if (!(params->ch[channel].cap_info.col))
-				continue;
-			if (ret[channel])
+			if (ret)
 				printf("%s: channel %d training failed!\n",
 				       __func__, channel);
 			else
@@ -2569,6 +2564,7 @@ static int sdram_init(struct dram_info *dram,
 	for (channel = 0; channel < 2; channel++) {
 		const struct chan_info *chan = &dram->chan[channel];
 		struct sdram_cap_info *cap_info = &params->ch[channel].cap_info;
+		u8 training_flag = PI_FULL_TRAINING;
 
 		if (cap_info->rank == 0) {
 			clear_channel_params(params, channel);
@@ -2580,9 +2576,27 @@ static int sdram_init(struct dram_info *dram,
 		debug("Channel ");
 		debug(channel ? "1: " : "0: ");
 
+		/* LPDDR3 should have write and read gate training */
+		if (params->base.dramtype == LPDDR3)
+			training_flag = PI_WRITE_LEVELING |
+					PI_READ_GATE_TRAINING;
+
+		if (params->base.dramtype != LPDDR4) {
+			ret = data_training(dram, channel, params,
+					    training_flag);
+			if (!ret) {
+				debug("%s: data train failed for channel %d\n",
+				      __func__, ret);
+				continue;
+			}
+		}
+
 		sdram_print_ddr_info(cap_info, &params->base);
+		set_memory_map(chan, channel, params);
+		cap_info->ddrconfig = calculate_ddrconfig(params, channel);
 
 		set_ddrconfig(chan, params, channel, cap_info->ddrconfig);
+		set_cap_relate_config(chan, params, channel);
 	}
 
 	if (params->base.num_channels == 0) {

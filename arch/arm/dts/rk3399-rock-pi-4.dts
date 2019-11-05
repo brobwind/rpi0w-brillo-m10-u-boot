@@ -16,8 +16,6 @@
 
 	chosen {
 		stdout-path = "serial2:1500000n8";
-		u-boot,spl-boot-order = \
-			&sdmmc, &sdhci;
 	};
 
 	clkin_gmac: external-gmac-clock {
