@@ -1093,6 +1093,11 @@ static void dwc2_set_stm32mp1_hsotg_params(struct dwc2_plat_otg_data *p)
 		p->usb_gusbcfg |= 1 << 30; /* FDMOD: Force device mode */
 }
 
+static void dwc2_set_bcm2835_hsotg_params(struct dwc2_plat_otg_data *p)
+{
+	p->usb_gusbcfg = MODE_DMA;
+}
+
 static int dwc2_udc_otg_reset_init(struct udevice *dev,
 				   struct reset_ctl_bulk *resets)
 {
@@ -1215,6 +1220,8 @@ static const struct udevice_id dwc2_udc_otg_ids[] = {
 	{ .compatible = "snps,dwc2" },
 	{ .compatible = "st,stm32mp1-hsotg",
 	  .data = (ulong)dwc2_set_stm32mp1_hsotg_params },
+	{ .compatible = "brcm,bcm2835-usb",
+	  .data = (ulong)dwc2_set_bcm2835_hsotg_params },
 	{},
 };
 
